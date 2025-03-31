@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>San Estanislao - Ciudades Intermedias - CAF</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/multi-style-layer.js"></script>
+        <script src="js/leaflet-svg-shape-markers.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="data/LmitesDepartamentales_1.js"></script>
+        <script src="data/DepartamentodeSanPedro_2.js"></script>
+        <script src="data/DistritodeSanEstanislao_3.js"></script>
+        <script src="data/BarriosSanEstanislao75_4.js"></script>
+        <script src="data/ComunidadesIndgenasSanEstanislao3_5.js"></script>
+        <script src="data/reasPrestacionalesdeSanEstanislao46_6.js"></script>
+        <script src="data/reasPrestacionalesdeSanEstanislaoAID8_7.js"></script>
+        <script src="data/ViviendasSanEstanislaoAID8184_8.js"></script>
+        <script src="data/LocalesDeportivosSanEstanislaoAID5_9.js"></script>
+        <script src="data/LocalesEducativosSanEstanislaoAID38_10.js"></script>
+        <script src="data/LocalesReligiososSanEstanislaoAID50_11.js"></script>
+        <script src="data/PlazasyParquesSanEstanislaoAID12_12.js"></script>
+        <script src="data/TanquesdeAguaSanEstanislaoAID46_13.js"></script>
+        <script src="data/PuestosPolicialesSanEstanislaoAID2_14.js"></script>
+        <script src="data/PuestosdeSaludSanEstanislaoAID6_15.js"></script>
+        <script src="data/RedesCloacalesSanEstanislao107km_16.js"></script>
+        <script src="data/EnvolventeRedesSanEstanislaoAID_17.js"></script>
+        <script src="data/MunicipalidaddeSanEstanislao_18.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-24.683928098654544,-56.478145469038516],[-24.647133699413285,-56.411674634694926]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var title = new L.Control({'position':'topright'});
+        title.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        title.update = function () {
+            this._div.innerHTML = '<h2>San Estanislao - Ciudades Intermedias - CAF</h2>';
+        };
+        title.addTo(map);
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_OSMStandard_0');
+        map.getPane('pane_OSMStandard_0').style.zIndex = 400;
+        var layer_OSMStandard_0 = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OSMStandard_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, CC-BY-SA</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OSMStandard_0;
+        map.addLayer(layer_OSMStandard_0);
+        function pop_LmitesDepartamentales_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LmitesDepartamentales_1_0() {
+            return {
+                pane: 'pane_LmitesDepartamentales_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_LmitesDepartamentales_1');
+        map.getPane('pane_LmitesDepartamentales_1').style.zIndex = 401;
+        map.getPane('pane_LmitesDepartamentales_1').style['mix-blend-mode'] = 'normal';
+        var layer_LmitesDepartamentales_1 = new L.geoJson(json_LmitesDepartamentales_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_LmitesDepartamentales_1',
+            layerName: 'layer_LmitesDepartamentales_1',
+            pane: 'pane_LmitesDepartamentales_1',
+            onEachFeature: pop_LmitesDepartamentales_1,
+            style: style_LmitesDepartamentales_1_0,
+        });
+        bounds_group.addLayer(layer_LmitesDepartamentales_1);
+        map.addLayer(layer_LmitesDepartamentales_1);
+        function pop_DepartamentodeSanPedro_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_DepartamentodeSanPedro_2_0() {
+            return {
+                pane: 'pane_DepartamentodeSanPedro_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.35)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(138,223,141,0.35)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_DepartamentodeSanPedro_2');
+        map.getPane('pane_DepartamentodeSanPedro_2').style.zIndex = 402;
+        map.getPane('pane_DepartamentodeSanPedro_2').style['mix-blend-mode'] = 'normal';
+        var layer_DepartamentodeSanPedro_2 = new L.geoJson(json_DepartamentodeSanPedro_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_DepartamentodeSanPedro_2',
+            layerName: 'layer_DepartamentodeSanPedro_2',
+            pane: 'pane_DepartamentodeSanPedro_2',
+            onEachFeature: pop_DepartamentodeSanPedro_2,
+            style: style_DepartamentodeSanPedro_2_0,
+        });
+        bounds_group.addLayer(layer_DepartamentodeSanPedro_2);
+        function pop_DistritodeSanEstanislao_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ELEVATION'] !== null ? autolinker.link(String(feature.properties['ELEVATION']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DISTRITO'] !== null ? autolinker.link(String(feature.properties['DISTRITO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DIST_DESC_'] !== null ? autolinker.link(String(feature.properties['DIST_DESC_']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CLAVE'] !== null ? autolinker.link(String(feature.properties['CLAVE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CLOSED'] !== null ? autolinker.link(String(feature.properties['CLOSED']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BORDER_STY'] !== null ? autolinker.link(String(feature.properties['BORDER_STY']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BORDER_COL'] !== null ? autolinker.link(String(feature.properties['BORDER_COL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BORDER_WID'] !== null ? autolinker.link(String(feature.properties['BORDER_WID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FILL_STYLE'] !== null ? autolinker.link(String(feature.properties['FILL_STYLE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FILL_COLOR'] !== null ? autolinker.link(String(feature.properties['FILL_COLOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LABEL_POS'] !== null ? autolinker.link(String(feature.properties['LABEL_POS']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FONT_SIZE'] !== null ? autolinker.link(String(feature.properties['FONT_SIZE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FONT_COLOR'] !== null ? autolinker.link(String(feature.properties['FONT_COLOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FONT_CHARS'] !== null ? autolinker.link(String(feature.properties['FONT_CHARS']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FONT_WEIGH'] !== null ? autolinker.link(String(feature.properties['FONT_WEIGH']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_DistritodeSanEstanislao_3_0() {
+            return {
+                pane: 'pane_DistritodeSanEstanislao_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.5)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,208,181,0.5)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_DistritodeSanEstanislao_3');
+        map.getPane('pane_DistritodeSanEstanislao_3').style.zIndex = 403;
+        map.getPane('pane_DistritodeSanEstanislao_3').style['mix-blend-mode'] = 'normal';
+        var layer_DistritodeSanEstanislao_3 = new L.geoJson(json_DistritodeSanEstanislao_3, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_DistritodeSanEstanislao_3',
+            layerName: 'layer_DistritodeSanEstanislao_3',
+            pane: 'pane_DistritodeSanEstanislao_3',
+            onEachFeature: pop_DistritodeSanEstanislao_3,
+            style: style_DistritodeSanEstanislao_3_0,
+        });
+        bounds_group.addLayer(layer_DistritodeSanEstanislao_3);
+        map.addLayer(layer_DistritodeSanEstanislao_3);
+        function pop_BarriosSanEstanislao75_4(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DISTRITO'] !== null ? autolinker.link(String(feature.properties['DISTRITO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DIST_DESC_'] !== null ? autolinker.link(String(feature.properties['DIST_DESC_']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BAR_LOC'] !== null ? autolinker.link(String(feature.properties['BAR_LOC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BARLO_DESC'] !== null ? autolinker.link(String(feature.properties['BARLO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_BarriosSanEstanislao75_4_0() {
+            return {
+                pane: 'pane_BarriosSanEstanislao75_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '2.0,1.0',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(225,89,137,0.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_BarriosSanEstanislao75_4');
+        map.getPane('pane_BarriosSanEstanislao75_4').style.zIndex = 404;
+        map.getPane('pane_BarriosSanEstanislao75_4').style['mix-blend-mode'] = 'normal';
+        var layer_BarriosSanEstanislao75_4 = new L.geoJson(json_BarriosSanEstanislao75_4, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_BarriosSanEstanislao75_4',
+            layerName: 'layer_BarriosSanEstanislao75_4',
+            pane: 'pane_BarriosSanEstanislao75_4',
+            onEachFeature: pop_BarriosSanEstanislao75_4,
+            style: style_BarriosSanEstanislao75_4_0,
+        });
+        bounds_group.addLayer(layer_BarriosSanEstanislao75_4);
+        function pop_ComunidadesIndgenasSanEstanislao3_5(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DISTRITO'] !== null ? autolinker.link(String(feature.properties['DISTRITO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DIST_DESC'] !== null ? autolinker.link(String(feature.properties['DIST_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['AREA'] !== null ? autolinker.link(String(feature.properties['AREA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BAR_LOC'] !== null ? autolinker.link(String(feature.properties['BAR_LOC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BARLO_DESC'] !== null ? autolinker.link(String(feature.properties['BARLO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ComunidadesIndgenasSanEstanislao3_5_0() {
+            return {
+                pane: 'pane_ComunidadesIndgenasSanEstanislao3_5',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,158,23,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_ComunidadesIndgenasSanEstanislao3_5');
+        map.getPane('pane_ComunidadesIndgenasSanEstanislao3_5').style.zIndex = 405;
+        map.getPane('pane_ComunidadesIndgenasSanEstanislao3_5').style['mix-blend-mode'] = 'normal';
+        var layer_ComunidadesIndgenasSanEstanislao3_5 = new L.geoJson(json_ComunidadesIndgenasSanEstanislao3_5, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_ComunidadesIndgenasSanEstanislao3_5',
+            layerName: 'layer_ComunidadesIndgenasSanEstanislao3_5',
+            pane: 'pane_ComunidadesIndgenasSanEstanislao3_5',
+            onEachFeature: pop_ComunidadesIndgenasSanEstanislao3_5,
+            style: style_ComunidadesIndgenasSanEstanislao3_5_0,
+        });
+        bounds_group.addLayer(layer_ComunidadesIndgenasSanEstanislao3_5);
+        map.addLayer(layer_ComunidadesIndgenasSanEstanislao3_5);
+        function pop_reasPrestacionalesdeSanEstanislao46_6(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['INSCRIPCIO'] !== null ? autolinker.link(String(feature.properties['INSCRIPCIO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PRESTADOR'] !== null ? autolinker.link(String(feature.properties['PRESTADOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LOCALIDAD'] !== null ? autolinker.link(String(feature.properties['LOCALIDAD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DEPARTAMEN'] !== null ? autolinker.link(String(feature.properties['DEPARTAMEN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        var pattern_reasPrestacionalesdeSanEstanislao46_6_0 = new L.StripePattern({
+            weight: 0.3,
+            spaceWeight: 2.0,
+            color: '#4daf4a',
+            opacity: 1.0,
+            spaceOpacity: 0,
+            angle: 225
+        });
+        pattern_reasPrestacionalesdeSanEstanislao46_6_0.addTo(map);
+        function style_reasPrestacionalesdeSanEstanislao46_6_0() {
+            return {
+                pane: 'pane_reasPrestacionalesdeSanEstanislao46_6',
+                stroke: false,
+                fillOpacity: 1,
+                fillPattern: pattern_reasPrestacionalesdeSanEstanislao46_6_0,
+                interactive: false,
+            }
+        }
+        function style_reasPrestacionalesdeSanEstanislao46_6_1() {
+            return {
+                pane: 'pane_reasPrestacionalesdeSanEstanislao46_6',
+                opacity: 1,
+                color: 'rgba(77,175,74,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_reasPrestacionalesdeSanEstanislao46_6');
+        map.getPane('pane_reasPrestacionalesdeSanEstanislao46_6').style.zIndex = 406;
+        map.getPane('pane_reasPrestacionalesdeSanEstanislao46_6').style['mix-blend-mode'] = 'normal';
+        var layer_reasPrestacionalesdeSanEstanislao46_6 = new L.geoJson.multiStyle(json_reasPrestacionalesdeSanEstanislao46_6, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_reasPrestacionalesdeSanEstanislao46_6',
+            layerName: 'layer_reasPrestacionalesdeSanEstanislao46_6',
+            pane: 'pane_reasPrestacionalesdeSanEstanislao46_6',
+            onEachFeature: pop_reasPrestacionalesdeSanEstanislao46_6,
+            styles: [style_reasPrestacionalesdeSanEstanislao46_6_0,style_reasPrestacionalesdeSanEstanislao46_6_1,]
+        });
+        bounds_group.addLayer(layer_reasPrestacionalesdeSanEstanislao46_6);
+        function pop_reasPrestacionalesdeSanEstanislaoAID8_7(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['INSCRIPCIO'] !== null ? autolinker.link(String(feature.properties['INSCRIPCIO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PRESTADOR'] !== null ? autolinker.link(String(feature.properties['PRESTADOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LOCALIDAD'] !== null ? autolinker.link(String(feature.properties['LOCALIDAD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DEPARTAMEN'] !== null ? autolinker.link(String(feature.properties['DEPARTAMEN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        var pattern_reasPrestacionalesdeSanEstanislaoAID8_7_0 = new L.StripePattern({
+            weight: 0.3,
+            spaceWeight: 2.0,
+            color: '#4daf4a',
+            opacity: 1.0,
+            spaceOpacity: 0,
+            angle: 315
+        });
+        pattern_reasPrestacionalesdeSanEstanislaoAID8_7_0.addTo(map);
+        function style_reasPrestacionalesdeSanEstanislaoAID8_7_0() {
+            return {
+                pane: 'pane_reasPrestacionalesdeSanEstanislaoAID8_7',
+                stroke: false,
+                fillOpacity: 1,
+                fillPattern: pattern_reasPrestacionalesdeSanEstanislaoAID8_7_0,
+                interactive: false,
+            }
+        }
+        function style_reasPrestacionalesdeSanEstanislaoAID8_7_1() {
+            return {
+                pane: 'pane_reasPrestacionalesdeSanEstanislaoAID8_7',
+                opacity: 1,
+                color: 'rgba(77,175,74,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_reasPrestacionalesdeSanEstanislaoAID8_7');
+        map.getPane('pane_reasPrestacionalesdeSanEstanislaoAID8_7').style.zIndex = 407;
+        map.getPane('pane_reasPrestacionalesdeSanEstanislaoAID8_7').style['mix-blend-mode'] = 'normal';
+        var layer_reasPrestacionalesdeSanEstanislaoAID8_7 = new L.geoJson.multiStyle(json_reasPrestacionalesdeSanEstanislaoAID8_7, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_reasPrestacionalesdeSanEstanislaoAID8_7',
+            layerName: 'layer_reasPrestacionalesdeSanEstanislaoAID8_7',
+            pane: 'pane_reasPrestacionalesdeSanEstanislaoAID8_7',
+            onEachFeature: pop_reasPrestacionalesdeSanEstanislaoAID8_7,
+            styles: [style_reasPrestacionalesdeSanEstanislaoAID8_7_0,style_reasPrestacionalesdeSanEstanislaoAID8_7_1,]
+        });
+        bounds_group.addLayer(layer_reasPrestacionalesdeSanEstanislaoAID8_7);
+        function pop_ViviendasSanEstanislaoAID8184_8(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO'] !== null ? autolinker.link(String(feature.properties['DPTO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DPTO_DESC'] !== null ? autolinker.link(String(feature.properties['DPTO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DISTRITO'] !== null ? autolinker.link(String(feature.properties['DISTRITO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DIST_DESC'] !== null ? autolinker.link(String(feature.properties['DIST_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BARLO_DESC'] !== null ? autolinker.link(String(feature.properties['BARLO_DESC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ViviendasSanEstanislaoAID8184_8_0() {
+            return {
+                pane: 'pane_ViviendasSanEstanislaoAID8184_8',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,0.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,127,0,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_ViviendasSanEstanislaoAID8184_8');
+        map.getPane('pane_ViviendasSanEstanislaoAID8184_8').style.zIndex = 408;
+        map.getPane('pane_ViviendasSanEstanislaoAID8184_8').style['mix-blend-mode'] = 'normal';
+        var layer_ViviendasSanEstanislaoAID8184_8 = new L.geoJson(json_ViviendasSanEstanislaoAID8184_8, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_ViviendasSanEstanislaoAID8184_8',
+            layerName: 'layer_ViviendasSanEstanislaoAID8184_8',
+            pane: 'pane_ViviendasSanEstanislaoAID8184_8',
+            onEachFeature: pop_ViviendasSanEstanislaoAID8184_8,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_ViviendasSanEstanislaoAID8184_8_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_ViviendasSanEstanislaoAID8184_8);
+        map.addLayer(layer_ViviendasSanEstanislaoAID8184_8);
+        function pop_LocalesDeportivosSanEstanislaoAID5_9(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LocalesDeportivosSanEstanislaoAID5_9_0() {
+            return {
+                pane: 'pane_LocalesDeportivosSanEstanislaoAID5_9',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(248,137,34,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_LocalesDeportivosSanEstanislaoAID5_9');
+        map.getPane('pane_LocalesDeportivosSanEstanislaoAID5_9').style.zIndex = 409;
+        map.getPane('pane_LocalesDeportivosSanEstanislaoAID5_9').style['mix-blend-mode'] = 'normal';
+        var layer_LocalesDeportivosSanEstanislaoAID5_9 = new L.geoJson(json_LocalesDeportivosSanEstanislaoAID5_9, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_LocalesDeportivosSanEstanislaoAID5_9',
+            layerName: 'layer_LocalesDeportivosSanEstanislaoAID5_9',
+            pane: 'pane_LocalesDeportivosSanEstanislaoAID5_9',
+            onEachFeature: pop_LocalesDeportivosSanEstanislaoAID5_9,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_LocalesDeportivosSanEstanislaoAID5_9_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_LocalesDeportivosSanEstanislaoAID5_9);
+        function pop_LocalesEducativosSanEstanislaoAID38_10(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescCodRef'] !== null ? autolinker.link(String(feature.properties['DescCodRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LocalesEducativosSanEstanislaoAID38_10_0() {
+            return {
+                pane: 'pane_LocalesEducativosSanEstanislaoAID38_10',
+                radius: 6.0,
+                opacity: 1,
+                color: 'rgba(255,35,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,228,246,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_LocalesEducativosSanEstanislaoAID38_10');
+        map.getPane('pane_LocalesEducativosSanEstanislaoAID38_10').style.zIndex = 410;
+        map.getPane('pane_LocalesEducativosSanEstanislaoAID38_10').style['mix-blend-mode'] = 'normal';
+        var layer_LocalesEducativosSanEstanislaoAID38_10 = new L.geoJson(json_LocalesEducativosSanEstanislaoAID38_10, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_LocalesEducativosSanEstanislaoAID38_10',
+            layerName: 'layer_LocalesEducativosSanEstanislaoAID38_10',
+            pane: 'pane_LocalesEducativosSanEstanislaoAID38_10',
+            onEachFeature: pop_LocalesEducativosSanEstanislaoAID38_10,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_LocalesEducativosSanEstanislaoAID38_10_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_LocalesEducativosSanEstanislaoAID38_10);
+        function pop_LocalesReligiososSanEstanislaoAID50_11(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LocalesReligiososSanEstanislaoAID50_11_0() {
+            return {
+                pane: 'pane_LocalesReligiososSanEstanislaoAID50_11',
+                radius: 5.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,241,13,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_LocalesReligiososSanEstanislaoAID50_11');
+        map.getPane('pane_LocalesReligiososSanEstanislaoAID50_11').style.zIndex = 411;
+        map.getPane('pane_LocalesReligiososSanEstanislaoAID50_11').style['mix-blend-mode'] = 'normal';
+        var layer_LocalesReligiososSanEstanislaoAID50_11 = new L.geoJson(json_LocalesReligiososSanEstanislaoAID50_11, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_LocalesReligiososSanEstanislaoAID50_11',
+            layerName: 'layer_LocalesReligiososSanEstanislaoAID50_11',
+            pane: 'pane_LocalesReligiososSanEstanislaoAID50_11',
+            onEachFeature: pop_LocalesReligiososSanEstanislaoAID50_11,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_LocalesReligiososSanEstanislaoAID50_11_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_LocalesReligiososSanEstanislaoAID50_11);
+        function pop_PlazasyParquesSanEstanislaoAID12_12(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PlazasyParquesSanEstanislaoAID12_12_0() {
+            return {
+                pane: 'pane_PlazasyParquesSanEstanislaoAID12_12',
+                shape: 'triangle',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(84,176,74,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_PlazasyParquesSanEstanislaoAID12_12');
+        map.getPane('pane_PlazasyParquesSanEstanislaoAID12_12').style.zIndex = 412;
+        map.getPane('pane_PlazasyParquesSanEstanislaoAID12_12').style['mix-blend-mode'] = 'normal';
+        var layer_PlazasyParquesSanEstanislaoAID12_12 = new L.geoJson(json_PlazasyParquesSanEstanislaoAID12_12, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_PlazasyParquesSanEstanislaoAID12_12',
+            layerName: 'layer_PlazasyParquesSanEstanislaoAID12_12',
+            pane: 'pane_PlazasyParquesSanEstanislaoAID12_12',
+            onEachFeature: pop_PlazasyParquesSanEstanislaoAID12_12,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.shapeMarker(latlng, style_PlazasyParquesSanEstanislaoAID12_12_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PlazasyParquesSanEstanislaoAID12_12);
+        function pop_TanquesdeAguaSanEstanislaoAID46_13(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CodRef'] !== null ? autolinker.link(String(feature.properties['CodRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_TanquesdeAguaSanEstanislaoAID46_13_0() {
+            return {
+                pane: 'pane_TanquesdeAguaSanEstanislaoAID46_13',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(19,54,231,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(9,236,228,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_TanquesdeAguaSanEstanislaoAID46_13');
+        map.getPane('pane_TanquesdeAguaSanEstanislaoAID46_13').style.zIndex = 413;
+        map.getPane('pane_TanquesdeAguaSanEstanislaoAID46_13').style['mix-blend-mode'] = 'normal';
+        var layer_TanquesdeAguaSanEstanislaoAID46_13 = new L.geoJson(json_TanquesdeAguaSanEstanislaoAID46_13, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_TanquesdeAguaSanEstanislaoAID46_13',
+            layerName: 'layer_TanquesdeAguaSanEstanislaoAID46_13',
+            pane: 'pane_TanquesdeAguaSanEstanislaoAID46_13',
+            onEachFeature: pop_TanquesdeAguaSanEstanislaoAID46_13,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_TanquesdeAguaSanEstanislaoAID46_13_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_TanquesdeAguaSanEstanislaoAID46_13);
+        function pop_PuestosPolicialesSanEstanislaoAID2_14(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PuestosPolicialesSanEstanislaoAID2_14_0() {
+            return {
+                pane: 'pane_PuestosPolicialesSanEstanislaoAID2_14',
+                shape: 'diamond',
+                radius: 5.0,
+                opacity: 1,
+                color: 'rgba(61,128,53,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(84,176,74,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_PuestosPolicialesSanEstanislaoAID2_14');
+        map.getPane('pane_PuestosPolicialesSanEstanislaoAID2_14').style.zIndex = 414;
+        map.getPane('pane_PuestosPolicialesSanEstanislaoAID2_14').style['mix-blend-mode'] = 'normal';
+        var layer_PuestosPolicialesSanEstanislaoAID2_14 = new L.geoJson(json_PuestosPolicialesSanEstanislaoAID2_14, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_PuestosPolicialesSanEstanislaoAID2_14',
+            layerName: 'layer_PuestosPolicialesSanEstanislaoAID2_14',
+            pane: 'pane_PuestosPolicialesSanEstanislaoAID2_14',
+            onEachFeature: pop_PuestosPolicialesSanEstanislaoAID2_14,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.shapeMarker(latlng, style_PuestosPolicialesSanEstanislaoAID2_14_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PuestosPolicialesSanEstanislaoAID2_14);
+        function pop_PuestosdeSaludSanEstanislaoAID6_15(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Area'] !== null ? autolinker.link(String(feature.properties['Area']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescCodRef'] !== null ? autolinker.link(String(feature.properties['DescCodRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DescRef'] !== null ? autolinker.link(String(feature.properties['DescRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NombRef'] !== null ? autolinker.link(String(feature.properties['NombRef']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PuestosdeSaludSanEstanislaoAID6_15_0() {
+            return {
+                pane: 'pane_PuestosdeSaludSanEstanislaoAID6_15',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(255,35,1,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 3.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_PuestosdeSaludSanEstanislaoAID6_15');
+        map.getPane('pane_PuestosdeSaludSanEstanislaoAID6_15').style.zIndex = 415;
+        map.getPane('pane_PuestosdeSaludSanEstanislaoAID6_15').style['mix-blend-mode'] = 'normal';
+        var layer_PuestosdeSaludSanEstanislaoAID6_15 = new L.geoJson(json_PuestosdeSaludSanEstanislaoAID6_15, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_PuestosdeSaludSanEstanislaoAID6_15',
+            layerName: 'layer_PuestosdeSaludSanEstanislaoAID6_15',
+            pane: 'pane_PuestosdeSaludSanEstanislaoAID6_15',
+            onEachFeature: pop_PuestosdeSaludSanEstanislaoAID6_15,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_PuestosdeSaludSanEstanislaoAID6_15_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PuestosdeSaludSanEstanislaoAID6_15);
+        function pop_RedesCloacalesSanEstanislao107km_16(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LABEL'] !== null ? autolinker.link(String(feature.properties['LABEL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['L'] !== null ? autolinker.link(String(feature.properties['L']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['RISEUNI'] !== null ? autolinker.link(String(feature.properties['RISEUNI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['S'] !== null ? autolinker.link(String(feature.properties['S']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['START_NOD'] !== null ? autolinker.link(String(feature.properties['START_NOD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['START_NODE'] !== null ? autolinker.link(String(feature.properties['START_NODE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['STOP_NO'] !== null ? autolinker.link(String(feature.properties['STOP_NO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['STOP_NOD'] !== null ? autolinker.link(String(feature.properties['STOP_NOD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RedesCloacalesSanEstanislao107km_16_0() {
+            return {
+                pane: 'pane_RedesCloacalesSanEstanislao107km_16',
+                opacity: 1,
+                color: 'rgba(31,171,241,1.0)',
+                dashArray: '',
+                lineCap: 'round',
+                lineJoin: 'round',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_RedesCloacalesSanEstanislao107km_16');
+        map.getPane('pane_RedesCloacalesSanEstanislao107km_16').style.zIndex = 416;
+        map.getPane('pane_RedesCloacalesSanEstanislao107km_16').style['mix-blend-mode'] = 'normal';
+        var layer_RedesCloacalesSanEstanislao107km_16 = new L.geoJson(json_RedesCloacalesSanEstanislao107km_16, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_RedesCloacalesSanEstanislao107km_16',
+            layerName: 'layer_RedesCloacalesSanEstanislao107km_16',
+            pane: 'pane_RedesCloacalesSanEstanislao107km_16',
+            onEachFeature: pop_RedesCloacalesSanEstanislao107km_16,
+            style: style_RedesCloacalesSanEstanislao107km_16_0,
+        });
+        bounds_group.addLayer(layer_RedesCloacalesSanEstanislao107km_16);
+        map.addLayer(layer_RedesCloacalesSanEstanislao107km_16);
+        function pop_EnvolventeRedesSanEstanislaoAID_17(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME'] !== null ? autolinker.link(String(feature.properties['NAME']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PERIMETER'] !== null ? autolinker.link(String(feature.properties['PERIMETER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ENCLOSED_A'] !== null ? autolinker.link(String(feature.properties['ENCLOSED_A']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_EnvolventeRedesSanEstanislaoAID_17_0() {
+            return {
+                pane: 'pane_EnvolventeRedesSanEstanislaoAID_17',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_EnvolventeRedesSanEstanislaoAID_17');
+        map.getPane('pane_EnvolventeRedesSanEstanislaoAID_17').style.zIndex = 417;
+        map.getPane('pane_EnvolventeRedesSanEstanislaoAID_17').style['mix-blend-mode'] = 'normal';
+        var layer_EnvolventeRedesSanEstanislaoAID_17 = new L.geoJson(json_EnvolventeRedesSanEstanislaoAID_17, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_EnvolventeRedesSanEstanislaoAID_17',
+            layerName: 'layer_EnvolventeRedesSanEstanislaoAID_17',
+            pane: 'pane_EnvolventeRedesSanEstanislaoAID_17',
+            onEachFeature: pop_EnvolventeRedesSanEstanislaoAID_17,
+            style: style_EnvolventeRedesSanEstanislaoAID_17_0,
+        });
+        bounds_group.addLayer(layer_EnvolventeRedesSanEstanislaoAID_17);
+        map.addLayer(layer_EnvolventeRedesSanEstanislaoAID_17);
+        function pop_MunicipalidaddeSanEstanislao_18(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Dpto'] !== null ? autolinker.link(String(feature.properties['Dpto']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DptoDesc'] !== null ? autolinker.link(String(feature.properties['DptoDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Distrito'] !== null ? autolinker.link(String(feature.properties['Distrito']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['DistDesc'] !== null ? autolinker.link(String(feature.properties['DistDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarLoc'] !== null ? autolinker.link(String(feature.properties['BarLoc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BarlocDesc'] !== null ? autolinker.link(String(feature.properties['BarlocDesc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MUNICIPALI'] !== null ? autolinker.link(String(feature.properties['MUNICIPALI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_MunicipalidaddeSanEstanislao_18_0() {
+            return {
+                pane: 'pane_MunicipalidaddeSanEstanislao_18',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,0,0,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_MunicipalidaddeSanEstanislao_18');
+        map.getPane('pane_MunicipalidaddeSanEstanislao_18').style.zIndex = 418;
+        map.getPane('pane_MunicipalidaddeSanEstanislao_18').style['mix-blend-mode'] = 'normal';
+        var layer_MunicipalidaddeSanEstanislao_18 = new L.geoJson(json_MunicipalidaddeSanEstanislao_18, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_MunicipalidaddeSanEstanislao_18',
+            layerName: 'layer_MunicipalidaddeSanEstanislao_18',
+            pane: 'pane_MunicipalidaddeSanEstanislao_18',
+            onEachFeature: pop_MunicipalidaddeSanEstanislao_18,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_MunicipalidaddeSanEstanislao_18_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_MunicipalidaddeSanEstanislao_18);
+        map.addLayer(layer_MunicipalidaddeSanEstanislao_18);
+        var overlaysTree = [
+            {label: '<img src="legend/MunicipalidaddeSanEstanislao_18.png" /> Municipalidad de San Estanislao', layer: layer_MunicipalidaddeSanEstanislao_18},
+            {label: '<img src="legend/EnvolventeRedesSanEstanislaoAID_17.png" /> Envolvente Redes San Estanislao AID', layer: layer_EnvolventeRedesSanEstanislaoAID_17},
+            {label: '<img src="legend/RedesCloacalesSanEstanislao107km_16.png" /> Redes Cloacales San Estanislao (107 km)', layer: layer_RedesCloacalesSanEstanislao107km_16},
+            {label: '<img src="legend/PuestosdeSaludSanEstanislaoAID6_15.png" /> Puestos de Salud San Estanislao AID (6)', layer: layer_PuestosdeSaludSanEstanislaoAID6_15},
+            {label: '<img src="legend/PuestosPolicialesSanEstanislaoAID2_14.png" /> Puestos Policiales San Estanislao AID (2)', layer: layer_PuestosPolicialesSanEstanislaoAID2_14},
+            {label: '<img src="legend/TanquesdeAguaSanEstanislaoAID46_13.png" /> Tanques de Agua San Estanislao AID (46)', layer: layer_TanquesdeAguaSanEstanislaoAID46_13},
+            {label: '<img src="legend/PlazasyParquesSanEstanislaoAID12_12.png" /> Plazas y Parques San Estanislao AID (12)', layer: layer_PlazasyParquesSanEstanislaoAID12_12},
+            {label: '<img src="legend/LocalesReligiososSanEstanislaoAID50_11.png" /> Locales Religiosos San Estanislao AID (50)', layer: layer_LocalesReligiososSanEstanislaoAID50_11},
+            {label: '<img src="legend/LocalesEducativosSanEstanislaoAID38_10.png" /> Locales Educativos San Estanislao AID (38)', layer: layer_LocalesEducativosSanEstanislaoAID38_10},
+            {label: '<img src="legend/LocalesDeportivosSanEstanislaoAID5_9.png" /> Locales Deportivos San Estanislao AID (5)', layer: layer_LocalesDeportivosSanEstanislaoAID5_9},
+            {label: '<img src="legend/ViviendasSanEstanislaoAID8184_8.png" /> Viviendas San Estanislao AID (8184)', layer: layer_ViviendasSanEstanislaoAID8184_8},
+            {label: '<img src="legend/reasPrestacionalesdeSanEstanislaoAID8_7.png" /> Áreas Prestacionales de San Estanislao AID (8)', layer: layer_reasPrestacionalesdeSanEstanislaoAID8_7},
+            {label: '<img src="legend/reasPrestacionalesdeSanEstanislao46_6.png" /> Áreas Prestacionales de San Estanislao (46)', layer: layer_reasPrestacionalesdeSanEstanislao46_6},
+            {label: '<img src="legend/ComunidadesIndgenasSanEstanislao3_5.png" /> Comunidades Indígenas San Estanislao (3)', layer: layer_ComunidadesIndgenasSanEstanislao3_5},
+            {label: '<img src="legend/BarriosSanEstanislao75_4.png" /> Barrios San Estanislao (75)', layer: layer_BarriosSanEstanislao75_4},
+            {label: '<img src="legend/DistritodeSanEstanislao_3.png" /> Distrito de San Estanislao', layer: layer_DistritodeSanEstanislao_3},
+            {label: '<img src="legend/DepartamentodeSanPedro_2.png" /> Departamento de San Pedro', layer: layer_DepartamentodeSanPedro_2},
+            {label: '<img src="legend/LmitesDepartamentales_1.png" /> Límites Departamentales', layer: layer_LmitesDepartamentales_1},
+            {label: "OSM Standard", layer: layer_OSMStandard_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+		document.addEventListener("DOMContentLoaded", function() {
+            // set new Layers List height which considers toggle icon
+            function newLayersListHeight() {
+                var layerScrollbarElement = document.querySelector('.leaflet-control-layers-scrollbar');
+                if (layerScrollbarElement) {
+                    var layersListElement = document.querySelector('.leaflet-control-layers-list');
+                    var originalHeight = layersListElement.style.height 
+                        || window.getComputedStyle(layersListElement).height;
+                    var newHeight = parseFloat(originalHeight) - 50;
+                    layersListElement.style.height = newHeight + 'px';
+                }
+            }
+            var isLayersListExpanded = true;
+            var controlLayersElement = document.querySelector('.leaflet-control-layers');
+            var toggleLayerControl = document.querySelector('.leaflet-control-layers-toggle');
+            // toggle Collapsed/Expanded and apply new Layers List height
+            toggleLayerControl.addEventListener('click', function() {
+                if (isLayersListExpanded) {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                } else {
+                    controlLayersElement.classList.add('leaflet-control-layers-expanded');
+                }
+                isLayersListExpanded = !isLayersListExpanded;
+                newLayersListHeight()
+            });	
+			// apply new Layers List height if toggle layerstree
+			if (controlLayersElement) {
+				controlLayersElement.addEventListener('click', function(event) {
+					var toggleLayerHeaderPointer = event.target.closest('.leaflet-layerstree-header-pointer span');
+					if (toggleLayerHeaderPointer) {
+						newLayersListHeight();
+					}
+				});
+			}
+            // Collapsed/Expanded at Start to apply new height
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            // Collapsed touch/small screen
+            var isSmallScreen = window.innerWidth < 650;
+            if (isSmallScreen) {
+                setTimeout(function() {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                    isLayersListExpanded = !isLayersListExpanded;
+                }, 500);
+            }  
+        });       
+        setBounds();
+        var i = 0;
+        layer_BarriosSanEstanislao75_4.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['BARLO_DESC'] !== null?String('<div style="color: #323232; font-size: 7pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['BARLO_DESC']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_BarriosSanEstanislao75_4'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_reasPrestacionalesdeSanEstanislao46_6.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['NAME'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['NAME']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_reasPrestacionalesdeSanEstanislao46_6'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_MunicipalidaddeSanEstanislao_18.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['MUNICIPALI'] !== null?String('<div style="color: #323232; font-size: 13pt; font-family: \'MS Reference Sans Serif\', sans-serif;">' + layer.feature.properties['MUNICIPALI']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_MunicipalidaddeSanEstanislao_18'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        resetLabels([layer_DistritodeSanEstanislao_3,layer_BarriosSanEstanislao75_4,layer_reasPrestacionalesdeSanEstanislao46_6,layer_MunicipalidaddeSanEstanislao_18]);
+        map.on("zoomend", function(){
+            resetLabels([layer_DistritodeSanEstanislao_3,layer_BarriosSanEstanislao75_4,layer_reasPrestacionalesdeSanEstanislao46_6,layer_MunicipalidaddeSanEstanislao_18]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_DistritodeSanEstanislao_3,layer_BarriosSanEstanislao75_4,layer_reasPrestacionalesdeSanEstanislao46_6,layer_MunicipalidaddeSanEstanislao_18]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_DistritodeSanEstanislao_3,layer_BarriosSanEstanislao75_4,layer_reasPrestacionalesdeSanEstanislao46_6,layer_MunicipalidaddeSanEstanislao_18]);
+        });
+        </script>
+    </body>
+</html>
